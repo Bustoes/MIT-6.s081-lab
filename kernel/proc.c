@@ -291,6 +291,9 @@ fork(void)
 
   safestrcpy(np->name, p->name, sizeof(p->name));
 
+  // 将trace_mask拷贝到子进程
+  np->trace_mask = p->trace_mask;
+
   pid = np->pid;
 
   np->state = RUNNABLE;
@@ -692,4 +695,16 @@ procdump(void)
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
   }
+}
+
+// 获取活动进程数
+void
+procnum(uint64 *sum)
+{
+  *sum = 0;
+  for(int i = 0; i < NPROC; i++) {
+    if(proc[i].state != UNUSED) {
+      (*sum)++;
+    }
+  }  
 }
