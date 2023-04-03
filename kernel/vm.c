@@ -14,6 +14,8 @@ pagetable_t kernel_pagetable;
 extern char etext[];  // kernel.ld sets this to end of kernel code.
 
 extern char trampoline[]; // trampoline.S
+			  
+int procdepth = 0;
 
 /*
  * create a direct-map page table for the kernel.
@@ -439,4 +441,39 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
   } else {
     return -1;
   }
+}
+
+void
+vmprint(pagetable_t pagetable)
+{
+  printf("page table %p\n", pagetable);
+  ptewalk(pagetable);
+}
+
+void ptewalk(pagetable_t pagetable)
+{
+  procdepth++;
+
+  // there are 2^9 = 512 PTEs in a page table.
+  for(int i = 0; i < 512; i++){
+    pte_t pte = pagetable[i];
+    if((pte & PTE_V) && (pte & (PTE_R|PTE_W|PTE_X)) == 0){
+      // this PTE points to a lower-level page table.
+      uint64 child = PTE2PA(pte);
+      pteprint(pte, child, n);
+      ptewalk((pagetable_t)child);
+    }
+
+    procdepth--;
+  }
+}
+
+void pteprint(pte_t pte, uint64 pa, int entrynum)
+{
+  for(int i = 0; i < procdepth; i++){
+    printf(".. ");
+  }
+  printf("..");
+
+  printf("%d: pte %p pa %p", entrynum, pte, pa);
 }
